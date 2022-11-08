@@ -1,0 +1,6 @@
+dnspython
+requests
+pandas
+plyvel
+lmdb
+

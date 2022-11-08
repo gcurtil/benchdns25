@@ -1,0 +1,7 @@
+-O3
+-std=c++14
+-W
+-Wall
+-pedantic
+-pthread
+-fno-omit-frame-pointer
