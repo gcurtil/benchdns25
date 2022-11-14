@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/miekg/dns"
 )
 
@@ -95,6 +97,41 @@ func resolve_host(server_addr string, domain string) DnsLookupResult {
 	}
 }
 
+func current_time_and_date_str2() string {
+	s := time.Now().Format("2006-01-02 15:04:05.000")
+	return s
+}
+
+func get_uuid() string {
+	v, _ := uuid.NewRandom()
+	return v.String()
+}
+
+type ServerRecord struct {
+	Addr string `json:"addr"`
+	Desc string `json:"desc"`
+}
+type OutputRecord struct {
+	// {
+	// 	"server"        : { "addr" : server_addr, "desc" : server_desc },
+	// 	"at"            : now_str,
+	// 	"rid"           : ruuid_str,
+	// 	"counter"       : counter,
+	// 	"id"            : uuid_str,
+	// 	"domain"        : domain,
+	// 	"lookup_time"   : lres.lookup_time,
+	// 	"lookup_ip"     : lres.ip,
+	// }
+	Server     ServerRecord `json:"server"`
+	At         string       `json:"at"`
+	Rid        string       `json:"rid"`
+	Counter    int          `json:"counter"`
+	Id         string       `json:"id"`
+	Domain     string       `json:"domain"`
+	LookupTime float64      `json:"lookup_time"`
+	LookupIp   string       `json:"lookup_ip"`
+}
+
 func run_benchmark(servers_path string, domains_path string, output_path string, verbose bool, numiter int) {
 	fmt.Printf("run_benchmark, servers: %v, domains: %v, output: %v\n", servers_path, domains_path, output_path)
 
@@ -127,7 +164,12 @@ func run_benchmark(servers_path string, domains_path string, output_path string,
 
 	// TODO warm up for lookups
 
-	// query
+	// Run the queries
+	// take note of current time
+	start_time_str := current_time_and_date_str2()
+	_ = start_time_str
+	ruuid_str := get_uuid()
+
 	var counter int = 0
 	for iter := 0; iter < numiter; iter++ {
 		for _, ds := range servers {
@@ -135,11 +177,29 @@ func run_benchmark(servers_path string, domains_path string, output_path string,
 				if verbose {
 					fmt.Printf("DEBUG: calling resolve_host(%s, %s)\n", ds.addr, domain)
 				}
-				// auto now_str = current_time_and_date_str2();
+
 				lres := resolve_host(ds.addr, domain)
 				if verbose {
 					fmt.Printf("DEBUG: resolve_host(%s, %s) returned %v\n",
 						ds.addr, domain, lres)
+				}
+
+				var now_str string = current_time_and_date_str2()
+				var uuid_str string = get_uuid()
+
+				prettyJSON, json_err := json.MarshalIndent(OutputRecord{
+					Server:     ServerRecord{Addr: ds.addr, Desc: ds.desc},
+					At:         now_str,
+					Rid:        ruuid_str,
+					Counter:    counter,
+					Id:         uuid_str,
+					Domain:     domain,
+					LookupTime: lres.lookup_time,
+					LookupIp:   lres.ip,
+				}, "", "\t")
+
+				if verbose {
+					fmt.Printf("DEBUG: resolve_host json_err: %v, output json: %v\n", json_err, string(prettyJSON))
 				}
 
 				counter++
