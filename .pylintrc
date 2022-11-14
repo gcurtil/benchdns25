@@ -416,6 +416,7 @@ disable=raw-checker-failed,
         useless-suppression,
         deprecated-pragma,
         use-symbolic-message-instead,
+        unspecified-encoding,
         C
 
 # Enable the message, report, category or checker with the given id(s). You can

@@ -1,10 +1,13 @@
 import argparse
 from dataclasses import dataclass
+import json
 import logging
 import pathlib
 import re
+from typing import Any, Dict, Union
 import uuid
 
+import dns.resolver
 import pandas as pd
 
 # https://plyvel.readthedocs.io/en/1.3.0/user.html
@@ -38,8 +41,29 @@ class LookupResult:
     lookup_time: float
 
 
-def resolve_host(server_addr: str, domain: str) -> LookupResult:
-    res = LookupResult(ret=0, ip="", lookup_time=0)
+def resolve_host(server_addr: str, domain: str, resolver_cache: Union[Dict[str, Any], None] = None) -> LookupResult:
+    with Timer("resolve_host, server_addr: %s, domain: %s", server_addr, domain, verbose=True) as t1:
+        # if cache passed in, check if we have a cached resolver for this server
+        resolver = resolver_cache.get(server_addr) if resolver_cache is not None else None       
+        if not resolver:
+            # logging.info("resolve_host, creating new resolver for server_addr: %s", server_addr)
+            resolver = dns.resolver.Resolver(configure=False)
+            resolver.nameservers = [ server_addr ]
+        else:
+            #logging.info("resolve_host, reusing resolver for server_addr: %s", server_addr)
+            pass
+        
+        # if cache passed in, save the resolver
+        if resolver_cache is not None:
+            resolver_cache[server_addr] = resolver
+
+        answer = resolver.resolve(domain, "A")
+
+    ip_addr = answer[0].address if answer else ""    
+    logging.info("resolve_host, server_addr: %s, domain: %s, answer: <%r>, ip_addr: %s", 
+            server_addr, domain, answer, ip_addr)
+        
+    res = LookupResult(ret=0, ip=ip_addr, lookup_time=t1.elapsed())
     return res
 
 
@@ -65,18 +89,24 @@ def bench_dnsquery(servers_path: str, domains_path: str, output_path: str, verbo
         if len(line) > 0:
             domain_data.append(line)
     
-    logging.info("domain_data: %d domains, list: <%s>", len(domain_data), domain_data)
+    logging.info("domain_data: %d domains, list: <%s>", len(domain_data), domain_data)    
 
+    resolver_cache = {}
+    # TODO: warmup 
+    pass
+
+    # take not of current time
+    start_time_str: str = current_time_and_date_str2()
 
     ruuid_str = get_uuid()
     data = []
     counter = 0
-    for i in range(numiter):
+    for _ in range(numiter):
         for server_addr, server_desc in server_data:
             for domain in domain_data:
-                if verbose:                
+                if verbose:
                     logging.info("DEBUG: calling resolve_host(%s, %s)\n", server_addr, domain)
-                lres = resolve_host(server_addr, domain)
+                lres = resolve_host(server_addr, domain, resolver_cache=resolver_cache)
                 
                 now_str: str = current_time_and_date_str2()
                 uuid_str: str = get_uuid()
@@ -99,7 +129,7 @@ def bench_dnsquery(servers_path: str, domains_path: str, output_path: str, verbo
                 }
 
                 dbKey = ldb_key(start_time_str, f"{counter:012d}")
-                dbValue = json_d.dumps()
+                dbValue = json.dumps(json_d)
                 if verbose:                
                     logging.info("DEBUG Key: <%s>, Value: %s\n", dbKey, dbValue)
                 
