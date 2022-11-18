@@ -14,6 +14,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/miekg/dns"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 func read_lines(path string) []string {
@@ -107,6 +109,10 @@ func get_uuid() string {
 	return v.String()
 }
 
+func ldb_key(group string, id string) string {
+	return fmt.Sprintf("%s|%s", group, id)
+}
+
 type ServerRecord struct {
 	Addr string `json:"addr"`
 	Desc string `json:"desc"`
@@ -164,6 +170,18 @@ func run_benchmark(servers_path string, domains_path string, output_path string,
 
 	// TODO warm up for lookups
 
+	// Set up database connection information and open database
+	o := &opt.Options{
+		// Filter: filter.NewBloomFilter(10),
+		Compression: opt.NoCompression,
+	}
+	db, err := leveldb.OpenFile(output_path, o)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	wo := opt.WriteOptions{}
+
 	// Run the queries
 	// take note of current time
 	start_time_str := current_time_and_date_str2()
@@ -201,6 +219,9 @@ func run_benchmark(servers_path string, domains_path string, output_path string,
 				if verbose {
 					fmt.Printf("DEBUG: resolve_host json_err: %v, output json: %v\n", json_err, string(prettyJSON))
 				}
+				dbKey := []byte(ldb_key(start_time_str, fmt.Sprintf("%012d", counter)))
+				dbValue := prettyJSON
+				db.Put(dbKey, dbValue, &wo)
 
 				counter++
 			}

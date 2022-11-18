@@ -4,10 +4,13 @@ go 1.18
 
 require (
 	github.com/google/uuid v1.3.0
+	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/miekg/dns v1.1.50
+	github.com/syndtr/goleveldb v1.0.0
 )
 
 require (
+	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210726213435-c6fcb2dbf985 // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
