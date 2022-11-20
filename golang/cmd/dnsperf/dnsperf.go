@@ -139,7 +139,8 @@ type OutputRecord struct {
 }
 
 func run_benchmark(servers_path string, domains_path string, output_path string, verbose bool, numiter int) {
-	fmt.Printf("run_benchmark, servers: %v, domains: %v, output: %v\n", servers_path, domains_path, output_path)
+	fmt.Printf("run_benchmark, servers: %v, domains: %v, output: %v, numiter: %d\n",
+		servers_path, domains_path, output_path, numiter)
 
 	// Read the list of DNS servers to use
 	var servers []DnsServer
@@ -149,12 +150,12 @@ func run_benchmark(servers_path string, domains_path string, output_path string,
 	var server_fn = func(s string) {
 		//fmt.Printf("server_processor, got s: <%s>\n", s)
 		if r_comment.MatchString(s) {
-			fmt.Printf("server_processor, skipping line s: <%s>\n", s)
+			// fmt.Printf("server_processor, skipping line s: <%s>\n", s)
 			return
 		}
 		parts := r_servers.FindStringSubmatch(s)
 		if parts != nil {
-			fmt.Printf("server_processor, s: <%s>, found parts: %v\n", s, parts)
+			// fmt.Printf("server_processor, s: <%s>, found parts: %v\n", s, parts)
 			ds := DnsServer{addr: parts[1], desc: parts[2]}
 			servers = append(servers, ds)
 		}
@@ -242,7 +243,6 @@ func main() {
 	flag.BoolVar(&verbose, "verbose", false, "Verbose output")
 	flag.Parse()
 
-	fmt.Printf("servers: %v, domains: %v, output: %v\n", servers, domains, output)
-
+	// fmt.Printf("servers: %v, domains: %v, output: %v\n", servers, domains, output)
 	run_benchmark(servers, domains, output, verbose, numiter)
 }

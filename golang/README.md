@@ -4,7 +4,6 @@
 
 ### Build
 
-
 #### dnsperf
 
 ```shell
@@ -16,6 +15,24 @@
 ```shell
 (benchdns) gui@monolith:~/devel/benchdnsdemo/golang$ go build cmd/dbsync/dbsync.go 
 ```
+
+#### Docker
+
+Build image:
+
+```shell
+(benchdns) gui@monolith:~/devel/benchdnsdemo$ docker build -t benchdnsdemo -f Dockerfile.multi . 
+```
+
+Run the benchmark `/app/run_benchmarks.sh` script inside:
+
+```shell
+(benchdns) gui@monolith:~/devel/benchdnsdemo$ docker run -it --rm benchdnsdemo bash 
+```
+
+Or use `docker run -it --rm benchdnsdemo /app/run_benchmarks.sh` directly.
+
+And bind mount `/app/output` to be able to access the `sqlite3` output file from the host.
 
 ### dnsperf - Run the DNS perf tests
 

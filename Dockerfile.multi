@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+
+# specify the base image to  be used for the application, alpine or ubuntu
+FROM golang:1.18
+
+WORKDIR /appsrc/golang
+
+# pre-copy/cache go.mod for pre-downloading dependencies and only redownloading them in subsequent builds if they change
+COPY golang/go.mod golang/go.sum ./
+RUN go mod download && go mod verify
+
+# rest of the source
+# COPY golang/*.go ./
+COPY golang/cmd/ ./cmd
+
+# build go app 
+RUN mkdir -p /app/golang
+RUN go build -o /app/golang/dnsperf ./cmd/dnsperf/dnsperf.go 
+RUN go build -o /app/golang/dbsync ./cmd/dbsync/dbsync.go 
+
+# Now prepare run scripts
+# copy servers and domains to qoery and run script
+RUN mkdir -p /app
+RUN mkdir -p /app/output
+COPY servers.txt /app
+COPY domains.txt /app
+COPY run_benchmarks.sh /app
+RUN chmod +x /app/*.sh 
+
+
+
+
+
+
+
+

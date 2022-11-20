@@ -72,6 +72,7 @@ const (
 			Id          TEXT PRIMARY KEY,
 			Rid         TEXT NOT NULL,
 			Counter     INTEGER NOT NULL,
+			At			TEXT NOT NULL,
 			ServerAddr  TEXT NOT NULL,
 			ServerDesc  TEXT NOT NULL,
 			Domain      TEXT NOT NULL,
@@ -81,13 +82,13 @@ const (
 	`
 
 	insert_table_perf_str_NAMED string = `
-		INSERT OR IGNORE INTO perf (Id, Rid, Counter, ServerAddr, ServerDesc, Domain, LookupTime, LookupIp)
-		VALUES ($Id, $Rid, $Counter, $ServerAddr, $ServerDesc, $Domain, $LookupTime, $LookupIp);
+		INSERT OR IGNORE INTO perf (Id, Rid, Counter, At, ServerAddr, ServerDesc, Domain, LookupTime, LookupIp)
+		VALUES ($Id, $Rid, $Counter, $At, $ServerAddr, $ServerDesc, $Domain, $LookupTime, $LookupIp);
 	`
 
 	insert_table_perf_str string = `
-	INSERT OR IGNORE INTO perf (Id, Rid, Counter, ServerAddr, ServerDesc, Domain, LookupTime, LookupIp)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+	INSERT OR IGNORE INTO perf (Id, Rid, Counter, At, ServerAddr, ServerDesc, Domain, LookupTime, LookupIp)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 `
 )
 
@@ -118,8 +119,9 @@ func run_sync(ldb_path string, sqldb_path string, verbose bool) {
 		log.Printf("%q: %s\n", err, create_table_perf_str)
 		return
 	}
+	defer output_db.Close()
 
-	// insert_table_perf_str
+	// insert into output db
 	var recordCounter int = 0
 	iter := input_db.NewIterator(nil, nil)
 	for iter.Next() {
@@ -142,7 +144,7 @@ func run_sync(ldb_path string, sqldb_path string, verbose bool) {
 
 		// insert into db
 		_, err = output_db.Exec(insert_table_perf_str,
-			r.Id, r.Rid, r.Counter, r.Server.Addr, r.Server.Desc, r.Domain, r.LookupTime, r.LookupIp)
+			r.Id, r.Rid, r.Counter, r.At, r.Server.Addr, r.Server.Desc, r.Domain, r.LookupTime, r.LookupIp)
 		if err != nil {
 			log.Printf("%q: could not insert into db for key: <%v>\n", err, key)
 			break
@@ -155,8 +157,6 @@ func run_sync(ldb_path string, sqldb_path string, verbose bool) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	defer output_db.Close()
 }
 
 func main() {
