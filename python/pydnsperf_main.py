@@ -19,31 +19,37 @@ logging.basicConfig(level=logging.DEBUG,
 
 
 def current_time_and_date_str2() -> str:
+    '''Return the current UTC time as a string.
+    '''
     t = datetime.datetime.utcnow()
     return t.strftime("%Y-%m-%d %T.%f")[:-3]
 
 def get_uuid() -> str:
+    '''Return a uuid as a string.    
+    '''
     return uuid.uuid4().hex
 
 def ldb_key(group:str, id_str: str) -> str:
+    '''Create a composite key for level db using the 2 parameters passed in.
+    '''
     return f"{group}|{id_str}"
 
-# role, company
-# emphasize availability 
-# tailor letter to the JD
-# prestige role, PM wants a cover letter
 
 @dataclass
 class LookupResult:
+    '''Holds the result of the DNS lookup.
+    '''
     ret: int
     ip: str
     lookup_time: float
 
 
 def resolve_host(server_addr: str, domain: str, resolver_cache: Union[Dict[str, Any], None] = None, verbose=None) -> LookupResult:
+    '''Resolves the host name passed in using the DNS server specified, and optionally a cache for the Resolver objects.
+    '''
     with Timer("resolve_host, server_addr: %s, domain: %s", server_addr, domain, verbose=verbose) as t1:
         # if cache passed in, check if we have a cached resolver for this server
-        resolver = resolver_cache.get(server_addr) if resolver_cache is not None else None       
+        resolver = resolver_cache.get(server_addr) if resolver_cache is not None else None
         if not resolver:
             # logging.info("resolve_host, creating new resolver for server_addr: %s", server_addr)
             resolver = dns.resolver.Resolver(configure=False)
@@ -51,16 +57,16 @@ def resolve_host(server_addr: str, domain: str, resolver_cache: Union[Dict[str, 
         else:
             #logging.info("resolve_host, reusing resolver for server_addr: %s", server_addr)
             pass
-        
+
         # if cache passed in, save the resolver
         if resolver_cache is not None:
             resolver_cache[server_addr] = resolver
 
         answer = resolver.resolve(domain, "A")
 
-    ip_addr = answer[0].address if answer else ""    
+    ip_addr = answer[0].address if answer else ""
     if verbose:
-        logging.info("resolve_host, server_addr: %s, domain: %s, answer: <%r>, ip_addr: %s", 
+        logging.info("resolve_host, server_addr: %s, domain: %s, answer: <%r>, ip_addr: %s",
                 server_addr, domain, answer, ip_addr)
         
     res = LookupResult(ret=0, ip=ip_addr, lookup_time=t1.elapsed())
@@ -68,6 +74,8 @@ def resolve_host(server_addr: str, domain: str, resolver_cache: Union[Dict[str, 
 
 
 def bench_dnsquery(servers_path: str, domains_path: str, output_path: str, verbose: bool, numiter: int):
+    '''Run the DNS query benchmark for the list of servers and domains specified.
+    '''
     # read list of servers
     re_server = re.compile("^([0-9.]+),\\s*(.*)\\s*$")
     re_comment = re.compile("^\\s*#(.*)$")
@@ -79,7 +87,7 @@ def bench_dnsquery(servers_path: str, domains_path: str, output_path: str, verbo
         m = re_server.search(line)
         if m:
             server_data.append((m.group(1), m.group(2)))
-    
+
     logging.info("server_data: %d servers, list: <%s>", len(server_data), server_data)
 
     # read list of domains
@@ -88,8 +96,8 @@ def bench_dnsquery(servers_path: str, domains_path: str, output_path: str, verbo
     for line in s.splitlines():
         if len(line) > 0:
             domain_data.append(line)
-    
-    logging.info("domain_data: %d domains, list: <%s>", len(domain_data), domain_data)    
+
+    logging.info("domain_data: %d domains, list: <%s>", len(domain_data), domain_data)
 
     resolver_cache = {}
     # TODO: warmup
