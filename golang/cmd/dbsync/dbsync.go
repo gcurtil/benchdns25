@@ -109,7 +109,6 @@ func run_sync(ldb_path string, sqldb_path string, verbose bool) {
 
 	// Output db
 	output_db, err := sql.Open("sqlite3", sqldb_path)
-	fmt.Printf("run_sync, sqldb: %v\n", output_db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -157,6 +156,8 @@ func run_sync(ldb_path string, sqldb_path string, verbose bool) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Printf("run_sync, wrote %d records\n", recordCounter)
 }
 
 func main() {
@@ -167,8 +168,6 @@ func main() {
 	flag.StringVar(&sqldbpath, "sqldbpath", "dns.db", "SQLite DB path")
 	flag.BoolVar(&verbose, "verbose", false, "Verbose output")
 	flag.Parse()
-
-	fmt.Printf("ldbpath: %v\n", ldbpath)
 
 	run_sync(ldbpath, sqldbpath, verbose)
 }

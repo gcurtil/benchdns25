@@ -22,9 +22,13 @@ RUN g++ $(< flags_gcc) -o /app/cxx/dnsperf_gcc dnsperf_main.cpp dnsquery.cpp uti
 # Python app build
 # here no build step per se, we just copy the source files and pip install the requirements file
 WORKDIR /app/python
-COPY python/* ./
+
+COPY python/requirements.txt ./
 # Run pip to download and install requirements
-RUN pip install --no-cache-dir --upgrade -r /app/python/requirements.txt
+# RUN pip install --no-cache-dir --upgrade -r /app/python/requirements.txt
+RUN pip install -r /app/python/requirements.txt
+
+COPY python/*.py ./
 
 
 # Go app build

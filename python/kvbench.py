@@ -1,4 +1,3 @@
-import argparse
 import logging
 import uuid
 
@@ -20,11 +19,11 @@ def bench_leveldb():
 
     val_b = uuid.uuid4().hex.encode()
     def write_entries(prefix: str, key_length: int, N: int):                    
-        with db.write_batch() as wb:            
+        with db.write_batch() as wb:
             for i in range(N):            
                 s1 = f"{prefix}|{i:08d}"
                 k = s1.rjust(key_length, '0')
-                db.put(k.encode(), val_b)
+                wb.put(k.encode(), val_b)
             
 
     key_lengths = [8, 16, 24, 32, 48, 64, 96, 128]
@@ -36,14 +35,13 @@ def bench_leveldb():
             write_entries(prefix, key_length, N)
         data.append((prefix, key_length, N, t1.elapsed()))
 
+    db.close()
+
     columns=["Prefix", "KL", "N", "dt"]
     df = pd.DataFrame(data, columns=columns)
-
-    db.close()
     return df
 
-
-if __name__ == '__main__':
+def main():
     # parser = argparse.ArgumentParser(description='Redis perf test client')
     # parser.add_argument('--redis-host', default="localhost", help='redis host')
     # parser.add_argument('--redis-port', type=int, default=6379, help='redis port')
@@ -55,3 +53,6 @@ if __name__ == '__main__':
     #with pd.option_context('display.float_format', '{:0.3f}'.format):
     with pd.option_context('display.precision', 3):
         logging.info("bench_leveldb timings: \n%s", df)
+
+if __name__ == '__main__':
+    main()
