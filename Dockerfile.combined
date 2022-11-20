@@ -1,0 +1,61 @@
+# syntax=docker/dockerfile:1
+
+# specify the base image to  be used for the application, alpine or ubuntu
+FROM golang:1.18
+
+# install packages to build c++ version and python3 
+RUN apt update -y && apt install -y python3-pip \
+  tar git curl wget tree \
+  sqlite3 \
+  build-essential g++ libunbound-dev libleveldb-dev liblmdb-dev
+
+# C++ app build
+WORKDIR /appsrc/cxx
+RUN mkdir -p /app/cxx
+COPY cxx/* ./
+RUN g++ $(< flags_gcc) -o /app/cxx/dnsperf_gcc dnsperf_main.cpp dnsquery.cpp utils.cpp -lunbound -lleveldb
+#RUN g++ $(< flags_gcc) -o /app/cxx/dnsperf_gcc_static dnsperf_main.cpp dnsquery.cpp utils.cpp -Wl,-Bstatic \
+#  -lunbound -lleveldb -Wl,-Bdynamic -lpthread -lsnappy -lnettle 
+#RUN g++ $(< flags_gcc) -o /app/cxx/dnsperf_gcc_static dnsperf_main.cpp dnsquery.cpp utils.cpp \
+# -l:/usr/lib/x86_64-linux-gnu/libunbound.a -lleveldb
+
+# Python app build
+# here no build step per se, we just copy the source files and pip install the requirements file
+WORKDIR /app/python
+COPY python/* ./
+# Run pip to download and install requirements
+RUN pip install --no-cache-dir --upgrade -r /app/python/requirements.txt
+
+
+# Go app build
+WORKDIR /appsrc/golang
+RUN mkdir -p /app/golang
+
+# pre-copy/cache go.mod for pre-downloading dependencies and only redownloading them in subsequent builds if they change
+COPY golang/go.mod golang/go.sum ./
+RUN go mod download && go mod verify
+
+# rest of the source
+# COPY golang/*.go ./
+COPY golang/cmd/ ./cmd
+
+# build go app 
+RUN go build -o /app/golang/dnsperf ./cmd/dnsperf/dnsperf.go 
+RUN go build -o /app/golang/dbsync ./cmd/dbsync/dbsync.go 
+
+# Now prepare run scripts
+# copy servers and domains to qoery and run script
+RUN mkdir -p /app
+RUN mkdir -p /app/output
+COPY servers.txt /app
+COPY domains.txt /app
+COPY run_benchmarks.sh /app
+RUN chmod +x /app/*.sh 
+
+
+
+
+
+
+
+

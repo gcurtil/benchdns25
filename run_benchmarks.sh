@@ -11,8 +11,13 @@ for ((i=0; i < n; i++)); do
     sleep 1
 done
 
+echo "Running Python version"
+python3 /app/python/pydnsperf_main.py --servers servers.txt --domains domains.txt --output /app/output/dnsperfpy 
+
+
 # sync data to SQL db
 time /app/golang/dbsync --ldbpath /app/output/dnsperfgo --sqldbpath /app/output/dnsgo.db --verbose true 
+time /app/golang/dbsync --ldbpath /app/output/dnsperfpy --sqldbpath /app/output/dnspy.db --verbose true 
 
 
 
