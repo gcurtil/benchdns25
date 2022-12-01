@@ -5,6 +5,7 @@ FROM golang:1.18
 
 # install packages to build c++ version and python3 
 RUN apt update -y && apt install -y python3-pip \
+  python3-pybind11 \
   tar git curl wget tree \
   sqlite3 \
   build-essential g++ libunbound-dev libleveldb-dev liblmdb-dev
@@ -46,6 +47,16 @@ COPY golang/cmd/ ./cmd
 # build go app 
 RUN go build -o /app/golang/dnsperf ./cmd/dnsperf/dnsperf.go 
 RUN go build -o /app/golang/dbsync ./cmd/dbsync/dbsync.go 
+
+# TMP: python pybind11
+WORKDIR /appsrc/python
+COPY python/*.py python/*.cpp ./
+RUN g++ -O3 -Wall -shared -std=c++14 -fPIC $(/usr/bin/python3 -m pybind11 --includes) \
+  -o cxxdnsquery$(/usr/bin/python3-config --extension-suffix) \
+  cxxdnsquery.cpp /appsrc/cxx/dnsquery.cpp /appsrc//cxx/utils.cpp -lunbound 
+
+WORKDIR /app/python
+RUN cp -av /appsrc/python /app/
 
 # Now prepare run scripts
 # copy servers and domains to qoery and run script

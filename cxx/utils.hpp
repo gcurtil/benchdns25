@@ -37,7 +37,7 @@ std::string string_format( const std::string& format, Args ... args )
 
 using TimePoint = std::chrono::system_clock::time_point;
 using myclock = std::chrono::system_clock;
-using myduration = std::chrono::duration<double, std::milli>;
+using myduration = std::chrono::duration<double>;
 
 struct SimpleTimer
 {

@@ -13,6 +13,10 @@ import dns.resolver
 import plyvel
 from util import Timer
 
+# for C++ implementation 
+import cxxdnsquery
+
+
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(module)s %(message)s',
                     handlers=[logging.StreamHandler()])
@@ -73,7 +77,26 @@ def resolve_host(server_addr: str, domain: str, resolver_cache: Union[Dict[str, 
     return res
 
 
-def bench_dnsquery(servers_path: str, domains_path: str, output_path: str, verbose: bool, numiter: int):
+def resolve_host_with_cxx(server_addr: str, domain: str, resolver_cache: Union[Dict[str, Any], None] = None, verbose=None) -> LookupResult:
+    '''Resolves the host name passed in using the DNS server specified. 
+       Uses implementation in C++ (note the cache for the Resolver objects is not used in this case).
+    '''
+    _ = resolver_cache
+    with Timer("resolve_host_cxx, server_addr: %s, domain: %s", server_addr, domain, verbose=verbose) as t1:
+        # call resolve function through cxxdnsquery module
+        r = cxxdnsquery.resolve_host_cxx(server_addr, domain)
+
+    ip_addr = r.ip
+    if verbose:
+        logging.info("resolve_host_cxx, server_addr: %s, domain: %s, r: <%r>, ip_addr: %s",
+                server_addr, domain, r, ip_addr)
+    
+    res = LookupResult(ret=0, ip=ip_addr, lookup_time=t1.elapsed())
+    return res
+
+
+def bench_dnsquery(servers_path: str, domains_path: str, output_path: str, verbose: bool, 
+    numiter: int, resolve_impl: str):
     '''Run the DNS query benchmark for the list of servers and domains specified.
     '''
     # read list of servers
@@ -108,13 +131,22 @@ def bench_dnsquery(servers_path: str, domains_path: str, output_path: str, verbo
     db = plyvel.DB(output_path, create_if_missing=True)
     ruuid_str = get_uuid()
     counter = 0
+
+    # check which implementation we want to use for resolving DNS queries, python or c++
+    if resolve_impl == "python":
+        resolve_host_fn = resolve_host
+    elif resolve_impl == "cxx":
+        resolve_host_fn = resolve_host_with_cxx
+    else:
+        raise Exception(f"Invalid value for resolve_impl: {resolve_impl}")
+
     with db.write_batch() as wb:
         for _ in range(numiter):
             for server_addr, server_desc in server_data:
                 for domain in domain_data:
                     if verbose:
                         logging.info("DEBUG: calling resolve_host(%s, %s)\n", server_addr, domain)
-                    lres = resolve_host(server_addr, domain, resolver_cache=resolver_cache, verbose=verbose)
+                    lres = resolve_host_fn(server_addr, domain, resolver_cache=resolver_cache, verbose=verbose)
                     
                     now_str: str = current_time_and_date_str2()
                     uuid_str: str = get_uuid()
@@ -157,10 +189,11 @@ def main():
     parser.add_argument('--output',  "-o", default="dnsperfdb_py", help='Output DB name')
     parser.add_argument("--verbose", "-v", default=False, action="store_true", help="Verbose output")
     parser.add_argument('--numiter', "-n", default=1, type=int, help='Number of Iterations')
+    parser.add_argument('--resolve-impl', default="python", help='Implementation for DNS resolving, <python|cxx>')
     args = parser.parse_args()
 
     # df = bench_leveldb(args.redis_host, args.redis_port, args.num_runs)
-    bench_dnsquery(args.servers, args.domains, args.output, args.verbose, args.numiter)
+    bench_dnsquery(args.servers, args.domains, args.output, args.verbose, args.numiter, args.resolve_impl)
 
 if __name__ == '__main__':
     main()
