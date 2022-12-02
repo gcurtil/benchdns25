@@ -4,5 +4,3 @@
 8.8.8.8, google1
 8.8.4.4, google2
 9.9.9.9, quad9
-# internal dns server below
-192.168.2.6, pf6
