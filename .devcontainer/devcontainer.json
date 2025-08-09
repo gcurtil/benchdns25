@@ -1,7 +1,7 @@
 {
   "name": "benchdns25 Dev",
   "build": {
-    "dockerfile": "Dockerfile.combined"
+    "dockerfile": "../Dockerfile.combined"
   },
   "settings": {},
   "postCreateCommand": "echo 'Ready!'",
