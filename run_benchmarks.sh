@@ -10,7 +10,7 @@ mkdir -p /app/output/dnsperfpycxx
 
 # Run DNS perf queries
 # for i in {1..5}; do 
-n=5
+n=2
 for ((i=0; i < n; i++)); do
     echo "Starting loop ${i} out of ${n}"
     
