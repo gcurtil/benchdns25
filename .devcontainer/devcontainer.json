@@ -1,0 +1,28 @@
+{
+	"name": "BenchDNS25 Multi-Language Development Environment",
+	"build": {
+		"dockerfile": "../Dockerfile.combined",
+		"context": ".."
+	},
+	"remoteUser": "vscode",
+	"postCreateCommand": "echo 'Development environment ready! Multi-language DNS benchmarking tools available.' && ls -la /app/",
+	"onCreateCommand": "groupadd --gid 1000 vscode && useradd --uid 1000 --gid vscode --shell /bin/bash --create-home vscode && echo 'vscode ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/vscode",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools",
+				"ms-python.python",
+				"golang.go"
+			],
+			"settings": {
+				"python.linting.pylintEnabled": true,
+				"python.linting.enabled": true,
+				"go.toolsManagement.checkForUpdates": "local"
+			}
+		}
+	},
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	"mounts": [
+		"source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached"
+	]
+}
