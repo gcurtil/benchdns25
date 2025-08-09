@@ -1,0 +1,9 @@
+{
+  "name": "benchdns25 Dev",
+  "build": {
+    "dockerfile": "Dockerfile.combined"
+  },
+  "settings": {},
+  "postCreateCommand": "echo 'Ready!'",
+  "remoteUser": "vscode"
+}
