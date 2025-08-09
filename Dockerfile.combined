@@ -1,7 +1,13 @@
 # syntax=docker/dockerfile:1
 
 # specify the base image to  be used for the application, alpine or ubuntu
-FROM golang:1.18
+# FROM golang:1.18
+
+# Microsoft also offers language-specific devcontainer images. For Go, use:
+# FROM mcr.microsoft.com/devcontainers/go:1-ubuntu
+
+# specific to the Go version app was tested with:
+FROM mcr.microsoft.com/devcontainers/go:1.18
 
 # install packages to build c++ version and python3 
 RUN apt update -y && apt install -y python3-pip \
